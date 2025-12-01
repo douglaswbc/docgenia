@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { generateDocumentContent } from '../services/geminiService';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify'; // Importe o toast
 
 const CreateDocument: React.FC = () => {
   const { user } = useAuth();
@@ -18,7 +19,6 @@ const CreateDocument: React.FC = () => {
   const [generatedContent, setGeneratedContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     if (initialType) setDocType(initialType);
@@ -26,19 +26,19 @@ const CreateDocument: React.FC = () => {
 
   const handleGenerate = async () => {
     if (!clientName || !details) {
-      setError('Por favor, preencha todos os campos obrigatórios.');
+      toast.warn('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
     
-    setError('');
     setIsGenerating(true);
-    setGeneratedContent('');
+    setGeneratedContent(''); // Clear previous content
 
     try {
       const content = await generateDocumentContent(specialty, docType, clientName, details);
       setGeneratedContent(content);
+      toast.success('Documento gerado com sucesso!');
     } catch (err) {
-      setError('Erro ao conectar com a IA. Tente novamente.');
+      toast.error('Erro ao conectar com a IA. Tente novamente.');
     } finally {
       setIsGenerating(false);
     }
@@ -60,11 +60,11 @@ const CreateDocument: React.FC = () => {
 
       if (error) throw error;
       
-      // Opcional: Redirecionar para Meus Documentos
+      toast.success('Documento salvo no histórico!');
       navigate('/my-documents');
     } catch (err: any) {
       console.error(err);
-      setError('Erro ao salvar o documento no banco de dados.');
+      toast.error('Erro ao salvar o documento.');
     } finally {
       setIsSaving(false);
     }
@@ -104,6 +104,7 @@ const CreateDocument: React.FC = () => {
                   onChange={(e) => setDocType(e.target.value)}
                   className="flex w-full min-w-0 flex-1 rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-gray-700 bg-background-light dark:bg-background-dark h-12 px-3 text-base font-normal leading-normal"
                 >
+                   {/* Dynamically populate based on specialty if needed, for now mostly generic + passed param */}
                   <option value={docType}>{docType || 'Selecione...'}</option>
                   <option>Contrato de Prestação de Serviços</option>
                   <option>Notificação Extrajudicial</option>
@@ -135,8 +136,6 @@ const CreateDocument: React.FC = () => {
                 placeholder="Descreva brevemente o principal objetivo do documento (ex: valores, prazos, obrigações)..."
               ></textarea>
             </label>
-
-             {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
 
             <button 
               onClick={handleGenerate}

@@ -1,14 +1,28 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // Importamos o contexto
+import { toast } from 'react-toastify';
 
 const Navbar: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut, user } = useAuth(); // Pegamos a função de sair e o usuário
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (path: string) => {
     return location.pathname.startsWith(path) 
       ? "text-primary dark:text-primary" 
       : "text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary";
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(); // Chama o Supabase para destruir a sessão
+      toast.info('Você saiu da conta.');
+      navigate('/'); // Redireciona para o login
+    } catch (error) {
+      console.error("Erro ao sair:", error);
+    }
   };
 
   return (
@@ -28,18 +42,27 @@ const Navbar: React.FC = () => {
       <nav className="hidden md:flex flex-1 justify-center items-center gap-9">
         <Link to="/dashboard" className={`text-sm font-medium leading-normal transition-colors ${isActive('/dashboard')}`}>Dashboard</Link>
         <Link to="/my-documents" className={`text-sm font-medium leading-normal transition-colors ${isActive('/my-documents')}`}>Documentos</Link>
-        <Link to="/settings" className={`text-sm font-medium leading-normal transition-colors ${isActive('/settings')}`}>Configurações</Link>
+        {/* Botão Sair transformado */}
+        <button 
+          onClick={handleLogout}
+          className="text-sm font-medium leading-normal transition-colors text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400"
+        >
+          Sair
+        </button>
       </nav>
 
       <div className="flex items-center gap-4">
         <button className="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
           <span className="material-symbols-outlined text-xl">notifications</span>
         </button>
+        
+        {/* Avatar com inicial do usuário se não tiver imagem */}
         <div 
-          className="size-10 rounded-full bg-cover bg-center bg-no-repeat ring-2 ring-transparent hover:ring-primary/50 transition-all cursor-pointer" 
-          style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAoMiDXKbI0p7amu0uYp41NHRvT0mzVKhqatEX1cD1jQbxvBc6fxNGK2jJswXkEN6ix-atdcsCfLtBodq0eRrcwPRujhbRaM_EhrMtlQB-aNNhYzmCHr6VKQ0jnx88e42LX3nWZ2hCv0WaKC6IXhAbrPMMRwbZFkb8Fdutb583Aga46lxqRPYaZYHH8M_w8ciiHCEyjVOoNvD5WWizg_n6j7hBvYOAxCz7SYruLrPAYtW4Qcfh6HYBtU177oAlNj_PU6DSCjWLgdxs")' }}
-          title="User Profile"
-        ></div>
+          className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold ring-2 ring-transparent hover:ring-primary/50 transition-all cursor-pointer"
+          title={user?.email}
+        >
+          {user?.email?.charAt(0).toUpperCase() || 'U'}
+        </div>
         
         {/* Mobile Menu Button */}
         <button 
@@ -52,11 +75,18 @@ const Navbar: React.FC = () => {
 
       {/* Mobile Dropdown */}
       {mobileMenuOpen && (
-        <div className="absolute top-16 left-0 w-full bg-white dark:bg-background-dark border-b border-gray-200 dark:border-gray-800 p-4 flex flex-col gap-4 md:hidden shadow-xl">
-          <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded">Dashboard</Link>
-          <Link to="/my-documents" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded">Documentos</Link>
-          <Link to="/settings" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded">Configurações</Link>
-          <Link to="/" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded">Sair</Link>
+        <div className="absolute top-16 left-0 w-full bg-white dark:bg-background-dark border-b border-gray-200 dark:border-gray-800 p-4 flex flex-col gap-4 md:hidden shadow-xl animate-in slide-in-from-top-2">
+          <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded text-gray-700 dark:text-gray-200">Dashboard</Link>
+          <Link to="/my-documents" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded text-gray-700 dark:text-gray-200">Documentos</Link>
+          <button 
+            onClick={() => {
+              handleLogout();
+              setMobileMenuOpen(false);
+            }} 
+            className="text-sm font-medium p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded text-left"
+          >
+            Sair
+          </button>
         </div>
       )}
     </header>
